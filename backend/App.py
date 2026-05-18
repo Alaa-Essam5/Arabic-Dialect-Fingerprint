@@ -28,8 +28,8 @@ def _noemoji(s):
 # =============================================================================
 # API KEYS — never sent to the browser
 # =============================================================================
-GROQ_API_KEY       = "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"
-ELEVENLABS_API_KEY = "sk_6d235e1cf4c51712cbaadee6e4b00d046b41a38b13a8bb02"
+GROQ_API_KEY       = "put your api key from groq here"
+ELEVENLABS_API_KEY = "put your api key from elevenlabs here"
 
 # =============================================================================
 # ELEVENLABS VOICE CATALOGUE
