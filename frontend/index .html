@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>لهجات — Arabic Dialect Fingerprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=JetBrains+Mono:wght@300;400;600;700&family=Cairo:wght@300;400;600;700;900&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════════════════
+   DESIGN SYSTEM — Obsidian Terminal + Arabic Gold
+   ══════════════════════════════════════════════════════ */
+:root {
+  --bg:         #06060f;
+  --bg2:        #0c0c1a;
+  --bg3:        #111125;
+  --panel:      #0e0e20;
+  --panel2:     #13132e;
+  --border:     #1e1e3a;
+  --border2:    #2a2a50;
+  --border3:    #383870;
+  --accent:     #c8934a;
+  --accent-lt:  #edb96a;
+  --accent-dim: #7a5a2e;
+  --teal:       #00d4b8;
+  --teal-dim:   #007a6a;
+  --red:        #ff4f6d;
+  --purple:     #7b6cff;
+  --text:       #e2ddd5;
+  --text2:      #8888aa;
+  --text3:      #454565;
+  /* Dialect colours */
+  --alg: #1DD1A1;
+  --glf: #00D2D3;
+  --lev: #F8B739;
+  --sud: #EE5A24;
+
+  --font-ar:   'Cairo', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-ser:  'Amiri', serif;
+  --font-disp: 'Syne', sans-serif;
+  --sidebar-w: 280px;
+  --header-h:  56px;
+  --r:  4px;
+  --r2: 8px;
+  --r3: 12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scanline */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.05) 3px, rgba(0,0,0,0.05) 4px);
+  pointer-events: none; z-index: 9999;
+}
+
+/* ══════════════════════════════════════════════════════
+   TOP HEADER (navigation between pages)
+   ══════════════════════════════════════════════════════ */
+header {
+  height: var(--header-h);
+  background: linear-gradient(90deg, #07071a 0%, #0d0d22 60%, #07071a 100%);
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  gap: 2rem;
+  flex-shrink: 0;
+  z-index: 200;
+}
+
+.logo-wrap { display: flex; align-items: baseline; gap: 0.8rem; margin-right: 1rem; }
+.logo-ar   { font-family: var(--font-ser); font-size: 2.2rem; color: var(--accent); line-height: 1; }
+.logo-en   { font-family: var(--font-disp); font-size: 0.9rem; color: var(--text3); letter-spacing: 0.25em; text-transform: uppercase; }
+
+.page-nav {
+  display: flex;
+  gap: 0;
+  flex: 1;
+}
+.page-nav-btn {
+  background: none; border: none;
+  color: var(--text3);
+  font-family: var(--font-mono); font-size: 0.7rem;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0 1.2rem; height: var(--header-h);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  position: relative; top: 0;
+}
+.page-nav-btn:hover  { color: var(--text); }
+.page-nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.header-pills {
+  display: flex; gap: 0.3rem; flex-wrap: wrap; align-items: center;
+}
+.dpill {
+  font-family: var(--font-mono); font-size: 0.56rem;
+  padding: 0.12rem 0.5rem; border-radius: 20px; border: 1px solid;
+  letter-spacing: 0.06em; opacity: 0.8;
+}
+.header-tag {
+  font-size: 0.58rem; color: var(--text3);
+  border: 1px solid var(--border); padding: 0.2rem 0.6rem;
+  border-radius: 2px; letter-spacing: 0.1em; white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════
+   PAGE WRAPPER
+   ══════════════════════════════════════════════════════ */
+.app-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.page { display: none; width: 100%; }
+.page.active { display: flex; }
+
+/* ══════════════════════════════════════════════════════
+   PAGE 1 — SINGLE ANALYSIS (Sidebar + Content)
+   ══════════════════════════════════════════════════════ */
+#page-single {
+  flex-direction: row;
+  overflow: hidden;
+}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.2rem;
+  gap: 1rem;
+}
+
+.sidebar-title {
+  font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text3); padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Upload zone — sidebar variant */
+.upload-zone {
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--r2);
+  padding: 1.8rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  background: var(--bg2);
+  position: relative;
+  transition: all 0.25s;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 0.4rem;
+  min-height: 110px;
+}
+.upload-zone:hover { border-color: var(--accent); background: rgba(200,147,74,0.06); }
+.upload-zone.has-file { border-color: var(--teal); background: rgba(0,212,184,0.05); }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width:100%; height:100%; }
+.upload-icon { font-size: 1.8rem; opacity: 0.55; }
+.upload-text { color: var(--text3); font-size: 0.68rem; line-height: 1.4; }
+.upload-name { color: var(--teal); font-size: 0.7rem; font-weight: 600; word-break: break-all; }
+
+.sidebar-audio audio {
+  width: 100%;
+  filter: invert(0.85) hue-rotate(180deg) brightness(0.85);
+  border-radius: var(--r);
+}
+
+/* Sidebar info panel */
+.sidebar-info {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 0.8rem;
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.info-row { display: flex; justify-content: space-between; align-items: center; }
+.info-label { font-size: 0.6rem; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; }
+.info-value { font-size: 0.7rem; color: var(--accent); font-weight: 600; }
+
+.sidebar-status {
+  padding: 0.7rem;
+  border-radius: var(--r);
+  font-size: 0.66rem;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  line-height: 1.5;
+  text-align: center;
+}
+.sidebar-status.ready { border-color: var(--teal); color: var(--teal); background: rgba(0,212,184,0.06); }
+.sidebar-status.error { border-color: var(--red); color: var(--red); background: rgba(255,79,109,0.06); }
+
+/* ── RIGHT CONTENT PANE ── */
+.content-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── INNER TABS ── */
+.inner-tabs {
+  display: flex;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border2);
+  padding: 0 1.5rem;
+  flex-shrink: 0;
+}
+.inner-tab {
+  background: none; border: none;
+  color: var(--text3);
+  font-family: var(--font-mono); font-size: 0.68rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.85rem 1.2rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  position: relative; top: 1px;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.inner-tab:hover  { color: var(--text); }
+.inner-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.inner-tab .tab-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text3); transition: background 0.2s;
+}
+.inner-tab.active .tab-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.inner-tab.done .tab-dot { background: var(--teal); }
+
+/* Tab content areas */
+.tab-panels {
+  flex: 1; overflow-y: auto; padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 1.4rem;
+}
+.tab-panel { display: none; flex-direction: column; gap: 1.4rem; }
+.tab-panel.active { display: flex; }
+
+/* Empty state */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1rem;
+  color: var(--text3); padding: 3rem;
+  text-align: center;
+}
+.empty-state .empty-icon { font-size: 3rem; opacity: 0.3; }
+.empty-state .empty-title { font-family: var(--font-disp); font-size: 1.1rem; letter-spacing: 0.1em; }
+.empty-state .empty-sub { font-size: 0.7rem; line-height: 1.8; opacity: 0.7; }
+
+/* ══════════════════════════════════════════════════════
+   CARDS
+   ══════════════════════════════════════════════════════ */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1.2rem;
+  position: relative;
+}
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 1.2rem; right: 1.2rem; height: 1px;
+  background: linear-gradient(90deg, var(--accent) 0%, transparent 40%);
+  border-radius: 1px;
+}
+.card-title {
+  font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 1rem;
+  padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.card-title .ct-icon { font-size: 0.85rem; }
+.card-title span { color: var(--text3); font-size: 0.58rem; }
+
+/* ── DIALECT BADGE ── */
+.dialect-badge {
+  display: inline-flex; align-items: center; gap: 0.8rem;
+  padding: 0.6rem 1.4rem; border-radius: var(--r);
+  font-weight: 700; font-size: 1rem;
+  margin-bottom: 1rem; border: 1.5px solid;
+}
+.dialect-badge .ar-name { font-family: var(--font-ser); font-size: 1.3rem; }
+.dialect-badge .tag {
+  background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.58rem; padding: 0.1rem 0.4rem; border-radius: 2px;
+  color: var(--text2);
+}
+
+/* ── PROBABILITY BARS ── */
+.proba-bars { display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.6rem; }
+.proba-row  { display: flex; align-items: center; gap: 0.8rem; }
+.proba-label { font-size: 0.68rem; color: var(--text2); width: 95px; flex-shrink: 0; }
+.proba-bar-wrap { flex: 1; background: var(--bg2); border-radius: 2px; height: 7px; overflow: hidden; }
+.proba-bar { height: 100%; border-radius: 2px; transition: width 0.7s cubic-bezier(.25,.8,.25,1); }
+.proba-val { font-size: 0.65rem; color: var(--text2); width: 40px; text-align: right; flex-shrink: 0; }
+
+/* ── EXPLANATION LIST ── */
+.expl-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+.expl-list li {
+  font-size: 0.78rem; color: var(--text2); line-height: 1.65;
+  padding: 0.5rem 0.8rem 0.5rem 1.6rem;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); position: relative;
+}
+.expl-list li::before {
+  content: '▸'; position: absolute; left: 0.6rem; top: 0.55rem;
+  color: var(--accent); font-size: 0.65rem;
+}
+.expl-list li strong { color: var(--text); }
+
+/* ── SPECTROGRAM / CHART IMAGES ── */
+.viz-img {
+  width: 100%; border-radius: var(--r);
+  border: 1px solid var(--border); display: block;
+}
+.viz-notice {
+  font-size: 0.65rem; color: var(--text3); margin-top: 0.5rem;
+  text-align: center; line-height: 1.6;
+}
+
+/* ── AUDIO VIZ TAB — waveform / spectrogram stats ── */
+.audio-stats-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem;
+}
+.stat-cell {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 0.7rem 0.9rem; display: flex; flex-direction: column; gap: 0.2rem;
+}
+.stat-cell .s-label { font-size: 0.58rem; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
+.stat-cell .s-value { font-size: 1rem; font-weight: 700; color: var(--accent); letter-spacing: 0.02em; }
+.stat-cell .s-sub   { font-size: 0.6rem; color: var(--text3); }
+
+/* Canvas waveform */
+#waveformCanvas {
+  width: 100%; height: 80px;
+  background: var(--bg2); border-radius: var(--r);
+  border: 1px solid var(--border); display: block;
+}
+
+/* Dialect fingerprint visual (pre-ML visual hint) */
+.fingerprint-bars {
+  display: flex; gap: 0.4rem; align-items: flex-end; height: 60px;
+}
+.fp-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+.fp-bar { width: 100%; border-radius: 2px 2px 0 0; transition: height 0.8s cubic-bezier(.25,.8,.25,1); }
+.fp-label { font-size: 0.56rem; color: var(--text3); text-align: center; }
+
+/* ── TRANSCRIPTION BOX ── */
+.trans-status {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text3);
+}
+.trans-status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--text3); transition: background 0.3s;
+  flex-shrink: 0;
+}
+.trans-status-dot.active { background: var(--teal); box-shadow: 0 0 6px var(--teal); animation: pulse 1s infinite; }
+.trans-status-dot.done   { background: var(--accent); }
+@keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.35;} }
+
+.transcript-box {
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 1.2rem 1.4rem; border-radius: var(--r);
+  font-family: var(--font-ar); direction: rtl;
+  font-size: 1.35rem; color: var(--text2); line-height: 2.3;
+  text-align: right; min-height: 80px; max-height: 240px;
+  overflow-y: auto; transition: border-color 0.3s;
+}
+.t-word {
+  transition: color 0.15s, background 0.1s, transform 0.12s, opacity 0.3s;
+  padding: 0.04rem 0.22rem; border-radius: 3px;
+  display: inline-block; opacity: 0; color: transparent;
+}
+.t-word.revealing {
+  opacity: 1; color: var(--text);
+  animation: wordReveal 0.22s ease forwards;
+}
+@keyframes wordReveal { from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);} }
+.t-word.revealed { opacity: 1; color: var(--text2); }
+.t-word.active {
+  background: var(--teal); color: #000 !important;
+  font-weight: 700; transform: scale(1.07); opacity: 1; border-radius: 3px;
+}
+.t-word.done { color: var(--text) !important; opacity: 1; }
+
+/* ── TRANSLATE TAB ── */
+.field-label {
+  display: block; font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 0.4rem;
+}
+.input-box {
+  width: 100%; padding: 0.65rem 0.9rem;
+  background: var(--bg2); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--font-mono); font-size: 0.78rem;
+  border-radius: var(--r); outline: none; transition: border-color 0.2s;
+}
+.input-box:focus  { border-color: var(--accent); }
+select.input-box option { background: var(--bg2); color: var(--text); }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+
+.btn {
+  padding: 0.72rem 1.4rem;
+  border: 1px solid var(--accent); border-radius: var(--r);
+  background: transparent; color: var(--accent);
+  font-family: var(--font-mono); font-size: 0.74rem;
+  font-weight: 700; cursor: pointer;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  transition: all 0.2s; white-space: nowrap;
+}
+.btn:hover:not(:disabled)   { background: var(--accent); color: #000; }
+.btn.primary { background: var(--accent); color: #000; }
+.btn.primary:hover:not(:disabled) { background: var(--accent-lt); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn.full { width: 100%; text-align: center; }
+.btn.teal { border-color: var(--teal); color: var(--teal); }
+.btn.teal:hover:not(:disabled) { background: var(--teal); color: #000; }
+.btn.sm { padding: 0.45rem 0.9rem; font-size: 0.68rem; }
+
+audio {
+  width: 100%;
+  filter: invert(0.85) hue-rotate(180deg) brightness(0.85);
+  border-radius: var(--r);
+}
+hr.divider { border:none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+/* ══════════════════════════════════════════════════════
+   PAGE 2 — MIXING
+   ══════════════════════════════════════════════════════ */
+#page-mix {
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.mix-layout {
+  padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 1.4rem;
+  max-width: 1100px; margin: 0 auto; width: 100%;
+}
+
+.mix-upload-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+}
+
+.mix-upload-block {
+  display: flex; flex-direction: column; gap: 0.6rem;
+}
+
+.mix-upload-zone {
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--r2); padding: 1.5rem;
+  text-align: center; cursor: pointer;
+  background: var(--bg2); position: relative;
+  transition: all 0.25s;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 0.4rem; min-height: 100px;
+}
+.mix-upload-zone:hover { border-color: var(--purple); background: rgba(123,108,255,0.05); }
+.mix-upload-zone.has-file { border-color: var(--teal); background: rgba(0,212,184,0.04); }
+.mix-upload-zone.file-a:hover { border-color: var(--accent); background: rgba(200,147,74,0.05); }
+.mix-upload-zone.file-a.has-file { border-color: var(--accent); }
+.mix-upload-zone input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%; }
+
+.audio-label-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.2rem 0.6rem; border-radius: 2px; border: 1px solid;
+  margin-bottom: 0.2rem;
+}
+
+/* Slider */
+.slider-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
+.slider-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text3); }
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 5px;
+  background: linear-gradient(90deg, var(--accent) var(--pct,50%), var(--border2) var(--pct,50%));
+  border-radius: 2px; outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--accent);
+  border: 2px solid var(--bg); cursor: pointer;
+  box-shadow: 0 0 10px rgba(200,147,74,0.5);
+}
+.slider-value {
+  text-align: center; font-size: 0.95rem; color: var(--accent);
+  font-weight: 700; letter-spacing: 0.05em;
+}
+
+/* Mode toggle */
+.mode-toggle { display: flex; gap: 0; border: 1px solid var(--border2); border-radius: var(--r); overflow: hidden; }
+.mode-btn {
+  flex: 1; padding: 0.6rem 1rem; background: none; border: none;
+  color: var(--text3); font-family: var(--font-mono); font-size: 0.68rem;
+  letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+  transition: all 0.2s; border-right: 1px solid var(--border2);
+}
+.mode-btn:last-child { border-right: none; }
+.mode-btn.active { background: var(--purple); color: #fff; }
+
+.mix-info-box {
+  background: rgba(123,108,255,0.07); border: 1px solid var(--purple);
+  border-radius: var(--r); padding: 0.75rem 1rem;
+  font-size: 0.76rem; color: var(--text2); line-height: 1.7;
+}
+.mix-info-box strong { color: var(--purple); }
+.mix-info-box.teal-box { background: rgba(0,212,184,0.05); border-color: var(--teal); }
+.mix-info-box.teal-box strong { color: var(--teal); }
+
+.mix-length-note {
+  font-size: 0.66rem; color: var(--teal); background: rgba(0,212,184,0.06);
+  border: 1px solid var(--teal-dim); border-radius: var(--r);
+  padding: 0.4rem 0.8rem; text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+}
+
+/* ══════════════════════════════════════════════════════
+   LOADER
+   ══════════════════════════════════════════════════════ */
+#loader {
+  display: none; position: fixed; inset: 0;
+  background: rgba(3,3,12,0.9); z-index: 1000;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 1.2rem; backdrop-filter: blur(6px);
+}
+.spinner {
+  width: 44px; height: 44px;
+  border: 2px solid var(--border2); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { 100%{transform:rotate(360deg);} }
+.loader-text { color: var(--accent); font-size: 0.8rem; letter-spacing: 0.12em; }
+.loader-sub  { color: var(--text3); font-size: 0.65rem; letter-spacing: 0.06em; }
+.loader-bar { width: 200px; height: 2px; background: var(--border2); border-radius: 1px; overflow: hidden; }
+.loader-bar-inner { height: 100%; background: var(--accent); animation: barAnim 1.5s ease-in-out infinite; }
+@keyframes barAnim { 0%{width:0%;margin-left:0}50%{width:60%}100%{width:0%;margin-left:100%} }
+
+/* ══════════════════════════════════════════════════════
+   SCROLLBAR
+   ══════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border3); }
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { display: none; }
+  .grid-2, .audio-stats-grid { grid-template-columns: 1fr; }
+  .mix-upload-row { grid-template-columns: 1fr; }
+  .header-pills { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ HEADER / PAGE NAVIGATION ══════════════════ -->
+<header>
+  <div class="logo-wrap">
+    <div class="logo-ar">لهجات</div>
+    <div class="logo-en">Dialect Fingerprint</div>
+  </div>
+
+  <nav class="page-nav">
+    <button class="page-nav-btn active" onclick="switchPage('single',this)">
+      🎙 Analysis &amp; Transcription
+    </button>
+    <button class="page-nav-btn" onclick="switchPage('mix',this)">
+      ⊕ Audio Mixing &amp; Blend
+    </button>
+  </nav>
+
+  <div class="header-pills">
+    <span class="dpill" style="color:var(--alg);border-color:var(--alg);">🇩🇿 ALG</span>
+    <span class="dpill" style="color:var(--glf);border-color:var(--glf);">🇸🇦 GLF</span>
+    <span class="dpill" style="color:var(--lev);border-color:var(--lev);">🇱🇧 LEV</span>
+    <span class="dpill" style="color:var(--sud);border-color:var(--sud);">🇸🇩 SUD</span>
+  </div>
+  <div class="header-tag">SVM · 4-dialect · v4.0</div>
+</header>
+
+<!-- ══════════════════ APP BODY ══════════════════ -->
+<div class="app-body">
+
+  <!-- ═══════════════════════════════════════════
+       PAGE 1 — SINGLE ANALYSIS
+       ═══════════════════════════════════════════ -->
+  <div id="page-single" class="page active">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-title">📂 Audio Source</div>
+
+      <div class="upload-zone" id="uz1">
+        <input type="file" id="f1" accept="audio/*" onchange="handleSingleUpload()"/>
+        <div class="upload-icon">🎙</div>
+        <div class="upload-text">Drop Arabic audio<br/>WAV · MP3 · FLAC · ~30 sec</div>
+        <div class="upload-name" id="uploadName1"></div>
+      </div>
+
+      <div class="sidebar-status" id="sidebarStatus">
+        Upload an audio file to begin analysis
+      </div>
+
+      <!-- File info (shown after upload) -->
+      <div class="sidebar-info" id="fileInfo" style="display:none;">
+        <div class="info-row">
+          <span class="info-label">Duration</span>
+          <span class="info-value" id="fileDuration">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">File Size</span>
+          <span class="info-value" id="fileSize">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Format</span>
+          <span class="info-value" id="fileFormat">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Dialect</span>
+          <span class="info-value" id="sidebarDialect">Analyzing…</span>
+        </div>
+      </div>
+
+      <div class="sidebar-audio" id="sidebarAudioWrap" style="display:none;">
+        <div class="sidebar-title" style="margin-top:0.3rem;">▶ Playback</div>
+        <audio id="audioPlayer" controls></audio>
+      </div>
+    </aside>
+
+    <!-- RIGHT CONTENT PANE -->
+    <div class="content-pane">
+
+      <!-- Inner Tabs -->
+      <div class="inner-tabs">
+        <button class="inner-tab active" id="itab-viz" onclick="switchInnerTab('viz',this)">
+          <span class="tab-dot"></span> Audio Fingerprint
+        </button>
+        <button class="inner-tab" id="itab-ml" onclick="switchInnerTab('ml',this)">
+          <span class="tab-dot"></span> ML Classification
+        </button>
+        <button class="inner-tab" id="itab-trans" onclick="switchInnerTab('trans',this)">
+          <span class="tab-dot"></span> Live Transcription
+        </button>
+        <button class="inner-tab" id="itab-translate" onclick="switchInnerTab('translate',this)">
+          <span class="tab-dot"></span> Dialect Translation
+        </button>
+      </div>
+
+      <!-- Tab Panels -->
+      <div class="tab-panels">
+
+        <!-- ─── TAB: Audio Fingerprint / Visual ─── -->
+        <div id="panel-viz" class="tab-panel active">
+          <div id="vizEmpty" class="empty-state">
+            <div class="empty-icon">🎵</div>
+            <div class="empty-title">Audio Fingerprint</div>
+            <div class="empty-sub">
+              Upload an audio file from the sidebar.<br/>
+              This tab will show the audio waveform, spectral features,<br/>
+              and a visual dialect fingerprint — before you even see the ML result.
+            </div>
+          </div>
+
+          <div id="vizContent" style="display:none; flex-direction:column; gap:1.2rem;">
+            <!-- Waveform + Stats -->
+            <div class="card">
+              <div class="card-title"><span class="ct-icon">〰</span> Waveform &amp; Signal Stats</div>
+              <canvas id="waveformCanvas"></canvas>
+              <div class="audio-stats-grid" style="margin-top:0.9rem;" id="statsGrid">
+                <!-- populated by JS -->
+              </div>
+            </div>
+
+            <!-- Dialect Fingerprint Viz (pre-ML visual hint based on features) -->
+            <div class="card">
+              <div class="card-title"><span class="ct-icon">🔍</span> Spectral Fingerprint <span>/ Guess the dialect from the shape</span></div>
+              <p style="font-size:0.72rem;color:var(--text3);margin-bottom:1rem;line-height:1.7;">
+                Each Arabic dialect has a unique acoustic fingerprint — pitch range, vowel energy, spectral centroid, and zero-crossing density. The chart below visualises these raw features. Can you guess the dialect before seeing the ML result?
+              </p>
+              <div style="margin-bottom:0.8rem;">
+                <div class="fingerprint-bars" id="fpBars">
+                  <!-- populated by JS -->
+                </div>
+                <div id="fpLegend" style="font-size:0.6rem;color:var(--text3);margin-top:0.6rem;"></div>
+              </div>
+              <div id="fpHint" style="font-size:0.75rem;color:var(--text2);background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:0.7rem;line-height:1.65;"></div>
+            </div>
+
+            <!-- Mel Spectrogram -->
+            <div class="card">
+              <div class="card-title"><span class="ct-icon">🌈</span> Mel Spectrogram <span>+ Spectral Centroid Overlay</span></div>
+              <img id="spectrogramImg" class="viz-img" alt="Mel Spectrogram"/>
+              <p class="viz-notice">Cyan line = spectral centroid tracking. Color intensity = log-frequency energy (magma cmap). Higher frequency energy patterns strongly differ across dialects.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── TAB: ML Classification ─── -->
+        <div id="panel-ml" class="tab-panel">
+          <div id="mlEmpty" class="empty-state">
+            <div class="empty-icon">🤖</div>
+            <div class="empty-title">ML Classifier</div>
+            <div class="empty-sub">Upload audio to run the SVM classifier<br/>across 11 key features.</div>
+          </div>
+
+          <div id="mlContent" style="display:none; flex-direction:column; gap:1.2rem;">
+            <div class="card">
+              <div class="card-title"><span class="ct-icon">🏆</span> Detected Dialect</div>
+              <div id="dialectBadge" class="dialect-badge"></div>
+              <div class="proba-bars" id="probaBars"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-title"><span class="ct-icon">🧠</span> Decision Visualization <span>/ Why did the model decide this?</span></div>
+              <img id="featureChartImg" class="viz-img" alt="Decision Visualization"/>
+              <p class="viz-notice">
+                <strong>Left:</strong> 3D LDA projection — each point is a speech sample. ★ = dialect centroid. ● = your audio. Lines show distance to each centroid — the shortest solid line is the predicted dialect.
+                &nbsp;|&nbsp;
+                <strong>Right:</strong> Per-feature deviation from the predicted dialect centroid — bars show which acoustic features pushed the decision.
+              </p>
+            </div>
+
+            <div class="card">
+              <div class="card-title"><span class="ct-icon">💡</span> Why this decision?</div>
+              <ul id="explanationList" class="expl-list"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── TAB: Live Transcription ─── -->
+        <div id="panel-trans" class="tab-panel">
+          <div id="transEmpty" class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div class="empty-title">Live Transcription</div>
+            <div class="empty-sub">Words appear word-by-word in sync with audio playback.<br/>Powered by ElevenLabs Scribe v2.</div>
+          </div>
+
+          <div id="transContent" style="display:none; flex-direction:column; gap:1.2rem;">
+            <div class="card">
+              <div class="card-title"><span class="ct-icon">▶</span> Audio Player <span>/ Play to see transcription appear</span></div>
+              <audio id="audioPlayerTrans" controls style="margin-bottom:0.6rem;"></audio>
+
+              <div class="trans-status">
+                <div class="trans-status-dot" id="transStatusDot"></div>
+                <span id="transStatusText">Press play to reveal transcription word by word</span>
+              </div>
+              <div class="transcript-box" id="transBox"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── TAB: Dialect Translation ─── -->
+        <div id="panel-translate" class="tab-panel">
+          <div id="translateEmpty" class="empty-state">
+            <div class="empty-icon">🌍</div>
+            <div class="empty-title">Dialect Translation</div>
+            <div class="empty-sub">Translate transcribed speech to any Arabic dialect<br/>and hear it spoken back via ElevenLabs TTS.</div>
+          </div>
+
+          <div id="translateContent" style="display:none; flex-direction:column; gap:1.2rem;">
+            <div class="card">
+              <div class="card-title"><span class="ct-icon">🔄</span> Dialect Translator &amp; Voice Synthesis</div>
+
+              <div class="grid-2" style="margin-bottom:0.9rem;">
+                <div>
+                  <label class="field-label">Source Dialect (Auto-Detected)</label>
+                  <input type="text" id="srcDialectInput" class="input-box" disabled style="opacity:0.55;">
+                </div>
+                <div>
+                  <label class="field-label">Target Dialect</label>
+                  <select id="tgtDialect" class="input-box">
+                    <option value="Egyptian">🇪🇬 مصري — Egyptian (Masri)</option>
+                    <option value="Gulf">🇸🇦 خليجي — Gulf (Khaleeji)</option>
+                    <option value="Levantine">🇱🇧 شامي — Levantine (Shami)</option>
+                    <option value="Algerian">🇩🇿 جزائري — Algerian (Darija)</option>
+                    <option value="Moroccan">🇲🇦 مغربي — Moroccan (Darija)</option>
+                    <option value="Iraqi">🇮🇶 عراقي — Iraqi (Baghdadi)</option>
+                    <option value="Tunisian">🇹🇳 تونسي — Tunisian (Tounsi)</option>
+                    <option value="Sudanese">🇸🇩 سوداني — Sudanese (Sudani)</option>
+                    <option value="Yemeni">🇾🇪 يمني — Yemeni (San'ani)</option>
+                    <option value="Libyan">🇱🇾 ليبي — Libyan</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="margin-bottom:0.9rem;">
+                <label class="field-label">Voice (ElevenLabs)</label>
+                <select id="ttsVoice" class="input-box">
+                  <option value="Sarah">♀ Sarah — هادئة واحترافية</option>
+                  <option value="Jessica">♀ Jessica — نبرة واضحة وعصرية</option>
+                  <option value="Adam">♂ Adam — صوت رجالي عميق</option>
+                  <option value="Charlie">♂ Charlie — صوت شبابي خفيف</option>
+                </select>
+              </div>
+
+              <button class="btn primary full" onclick="doTranslate()">Translate &amp; Synthesise Speech ▶</button>
+
+              <div id="translateResult" style="display:none; margin-top:1.4rem; display:none; flex-direction:column; gap:0.9rem;">
+                <div>
+                  <label class="field-label">Translated Text</label>
+                  <div id="translatedText" class="transcript-box" style="font-size:1.15rem;color:var(--accent);"></div>
+                </div>
+                <div>
+                  <label class="field-label">Synthesised Audio</label>
+                  <audio id="ttsPlayer" controls style="width:100%;"></audio>
+                </div>
+                <div id="ttsError" style="display:none;color:var(--red);font-size:0.75rem;margin-top:0.2rem;"></div>
+                <button id="ttsDownloadBtn" class="btn teal" style="display:none;" onclick="downloadTTS()">⬇ Download Translated Audio</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tab-panels -->
+    </div><!-- /content-pane -->
+  </div><!-- /page-single -->
+
+
+  <!-- ═══════════════════════════════════════════
+       PAGE 2 — AUDIO MIXING
+       ═══════════════════════════════════════════ -->
+  <div id="page-mix" class="page">
+    <div class="mix-layout">
+
+      <!-- Upload Row -->
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">📂</span> Upload Two Audio Files</div>
+        <div class="mix-upload-row">
+
+          <div class="mix-upload-block">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <span class="audio-label-badge" style="color:var(--accent);border-color:var(--accent);">A</span>
+              <span class="field-label" style="margin:0;">Audio File A</span>
+            </div>
+            <div class="mix-upload-zone file-a" id="uzA">
+              <input type="file" id="fA" accept="audio/*" onchange="handleMixUpload('A')"/>
+              <div class="upload-icon">🎵</div>
+              <div class="upload-text" id="uploadTextA" style="font-size:0.7rem;color:var(--text3);">Drop Audio A here</div>
+              <div class="upload-name" id="uploadNameA"></div>
+            </div>
+            <audio id="audioA" controls style="display:none;"></audio>
+            <div class="info-value" id="durationA" style="font-size:0.65rem;color:var(--text3);"></div>
+          </div>
+
+          <div class="mix-upload-block">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <span class="audio-label-badge" style="color:var(--purple);border-color:var(--purple);">B</span>
+              <span class="field-label" style="margin:0;">Audio File B</span>
+            </div>
+            <div class="mix-upload-zone" id="uzB">
+              <input type="file" id="fB" accept="audio/*" onchange="handleMixUpload('B')"/>
+              <div class="upload-icon">🎵</div>
+              <div class="upload-text" id="uploadTextB" style="font-size:0.7rem;color:var(--text3);">Drop Audio B here</div>
+              <div class="upload-name" id="uploadNameB"></div>
+            </div>
+            <audio id="audioB" controls style="display:none;"></audio>
+            <div class="info-value" id="durationB" style="font-size:0.65rem;color:var(--text3);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mix Controls -->
+      <div class="card">
+        <div class="card-title"><span class="ct-icon">🎛</span> Mixing Mode &amp; Weight</div>
+
+        <div class="mode-toggle" style="margin-bottom:1.2rem;">
+          <button class="mode-btn active" id="modeOverlapBtn" onclick="setMode('overlap')">
+            ⊕ Overlap (Weighted Sum)
+          </button>
+          <button class="mode-btn" id="modeSeqBtn" onclick="setMode('sequential')">
+            ⟶ Sequential (Concatenate)
+          </button>
+        </div>
+
+        <div id="modeDescOverlap" class="mix-info-box" style="margin-bottom:1rem;">
+          <strong>Overlap Mode:</strong> Both files are multiplied by their weights and summed sample-by-sample.
+          Result length = <strong>longest audio</strong>. The shorter file is zero-padded to match.
+          At 50% the classifier should blend toward both contributing dialects proportionally.
+        </div>
+        <div id="modeDescSeq" class="mix-info-box teal-box" style="display:none;margin-bottom:1rem;">
+          <strong>Sequential Mode:</strong> No overlap — the slider controls how much of Audio A (from its start)
+          is followed by how much of Audio B (from its end).
+          Result length = <strong>longest audio</strong>. Remaining time is padded with silence.
+        </div>
+
+        <div class="mix-length-note" id="mixLengthNote" style="margin-bottom:1rem; display:none;">
+          ⏱ Result length will be <strong id="mixLengthVal">—</strong> — matching the longest audio
+        </div>
+
+        <div class="slider-wrap" style="margin-bottom:1.2rem;">
+          <div class="slider-labels">
+            <span id="sliderLabelA" style="color:var(--accent);">Audio A — 50%</span>
+            <span id="sliderLabelB" style="color:var(--purple);">Audio B — 50%</span>
+          </div>
+          <input type="range" id="weightSlider" min="0" max="100" value="50" oninput="updateSlider(this.value)"/>
+          <div class="slider-value" id="sliderValue">A: 50%&nbsp; | &nbsp;B: 50%</div>
+        </div>
+
+        <button class="btn teal full" id="btnMix" onclick="doMix()" disabled>
+          Mix &amp; Analyze ▶
+        </button>
+      </div>
+
+      <!-- Mix Results -->
+      <div id="mix-results" style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:1.2rem;">
+
+          <div class="card">
+            <div class="card-title"><span class="ct-icon">▶</span> Mixed Audio Playback</div>
+            <div id="mixLabel" class="mix-info-box" style="margin-bottom:0.8rem;"></div>
+            <audio id="mixedPlayer" controls></audio>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="ct-icon">🏆</span> Dialect Classification of Mixed Audio</div>
+            <div id="mixDialectBadge" class="dialect-badge"></div>
+            <div class="proba-bars" id="mixProbaBars"></div>
+            <hr class="divider"/>
+            <ul id="mixExplanationList" class="expl-list"></ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="ct-icon">🌈</span> Mixed Audio Mel Spectrogram</div>
+            <img id="mixSpectrogramImg" class="viz-img" alt="Mix Spectrogram"/>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="ct-icon">🧠</span> Decision Visualization <span>/ 3D LDA + Feature Deviations</span></div>
+            <img id="mixFeatureChartImg" class="viz-img" alt="Mix Decision Visualization"/>
+            <p class="viz-notice">As the blend ratio changes, the test sample shifts in LDA space — watch it move between dialect clusters.</p>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /mix-layout -->
+  </div><!-- /page-mix -->
+
+</div><!-- /app-body -->
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="spinner"></div>
+  <div class="loader-text" id="loaderText">Processing…</div>
+  <div class="loader-sub" id="loaderSub">Extracting 11 key features</div>
+  <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   CONSTANTS & STATE
+   ══════════════════════════════════════════════════════ */
+const API = 'http://127.0.0.1:5000';
+
+let b64Single = '';
+let b64A = '', b64B = '';
+let mixMode   = 'overlap';
+let transWords = [];
+let durA = 0, durB = 0;
+
+const DIALECT_COLORS = { Algerian:'#1DD1A1', Gulf:'#00D2D3', Levantine:'#F8B739', Sudanese:'#EE5A24' };
+const DIALECT_LABELS = { Algerian:'Algerian', Gulf:'Gulf', Levantine:'Levantine', Sudanese:'Sudanese' };
+
+/* ══════════════════════════════════════════════════════
+   PAGE / TAB SWITCHING
+   ══════════════════════════════════════════════════════ */
+function switchPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function switchInnerTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.inner-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ══════════════════════════════════════════════════════
+   LOADER
+   ══════════════════════════════════════════════════════ */
+function showLoad(msg, sub='') {
+  document.getElementById('loaderText').textContent = msg;
+  document.getElementById('loaderSub').textContent  = sub;
+  document.getElementById('loader').style.display   = 'flex';
+}
+function hideLoad() { document.getElementById('loader').style.display = 'none'; }
+
+/* ══════════════════════════════════════════════════════
+   UTILS
+   ══════════════════════════════════════════════════════ */
+function fileToB64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onloadend = () => res(r.result.split(',')[1]);
+    r.onerror   = () => rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+function formatDur(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024)       return bytes + ' B';
+  if (bytes < 1048576)    return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+/* ══════════════════════════════════════════════════════
+   WAVEFORM CANVAS
+   ══════════════════════════════════════════════════════ */
+function drawWaveform(audioBuffer) {
+  const canvas = document.getElementById('waveformCanvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  const data   = audioBuffer.getChannelData(0);
+  const step   = Math.ceil(data.length / W);
+  const mid    = H / 2;
+  const accentColor = '#c8934a';
+  const dimColor    = '#2a2a50';
+
+  for (let x = 0; x < W; x++) {
+    let min = 1, max = -1;
+    for (let j = 0; j < step; j++) {
+      const v = data[x * step + j] || 0;
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    const pct = x / W;
+    const r = Math.round(200 + (238 - 200) * pct);
+    const g = Math.round(147 + (219 - 147) * pct);
+    const b = 74;
+    ctx.strokeStyle = `rgba(${r},${g},${b},0.7)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, mid + min * mid);
+    ctx.lineTo(x, mid + max * mid);
+    ctx.stroke();
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   FINGERPRINT BARS (visual dialect hint from features)
+   ══════════════════════════════════════════════════════ */
+function renderFingerprintBars(feat) {
+  // feat is the raw feature explanation data from backend
+  // We'll draw bars for MFCC1, MFCC2, SC, SB, ZCR, F0 normalised
+  const fpBars  = document.getElementById('fpBars');
+  const fpHint  = document.getElementById('fpHint');
+  const fpLegend = document.getElementById('fpLegend');
+
+  // Feature ranges for normalisation (typical speech range)
+  const ranges = [
+    { name:'MFCC-1\nEnergy',   min:-450, max:-200, color:'#c8934a' },
+    { name:'MFCC-2\nSlope',    min:0,    max:35,   color:'#edb96a' },
+    { name:'Spectral\nCenter', min:1800, max:3200,  color:'#00d4b8' },
+    { name:'Spectral\nWidth',  min:1400, max:2300,  color:'#7b6cff' },
+    { name:'Zero-Cross\nRate', min:0.04, max:0.12,  color:'#FF6B6B' },
+    { name:'Pitch\nF0 (Hz)',   min:100,  max:220,   color:'#F8B739' },
+  ];
+
+  // Extract values from feat (passed as object from doSingleAnalysis)
+  const vals = feat ? [
+    feat.mfcc1 || -300, feat.mfcc2 || 20, feat.sc || 2500,
+    feat.sb || 1800, feat.zcr || 0.08, feat.f0 || 160
+  ] : ranges.map(r => (r.min + r.max) / 2);
+
+  fpBars.innerHTML = '';
+  ranges.forEach((r, i) => {
+    const norm = Math.max(0, Math.min(1, (vals[i] - r.min) / (r.max - r.min)));
+    const h    = Math.round(10 + norm * 50); // 10..60px
+    const wrap = document.createElement('div');
+    wrap.className = 'fp-bar-wrap';
+    wrap.innerHTML = `
+      <div class="fp-bar" style="height:${h}px;background:${r.color};opacity:0.85;"></div>
+      <div class="fp-label" style="font-size:0.52rem;color:var(--text3);text-align:center;white-space:pre-line;">${r.name}</div>
+    `;
+    fpBars.appendChild(wrap);
+  });
+
+  // Dialect fingerprint hints based on patterns
+  const hints = {
+    highSC:   vals[2] > 2600, // High spectral centroid → Levantine/Algerian
+    highZCR:  vals[4] > 0.082,
+    highF0:   vals[5] > 170,
+    lowSB:    vals[3] < 1750,
+    lowMFCC1: vals[0] < -310,
+  };
+
+  let hintText = '🔍 ';
+  if (hints.highSC && hints.highZCR)
+    hintText += 'High spectral centroid + high ZCR → patterns consistent with <strong>Levantine</strong> rising-falling intonation and expressive prosody.';
+  else if (hints.lowSB && hints.lowMFCC1)
+    hintText += 'Low spectral bandwidth and compressed MFCC-1 → matches <strong>Gulf</strong> conservative pharyngeal articulation and measured prosodic contours.';
+  else if (hints.highF0 && hints.highZCR)
+    hintText += 'Elevated F0 and high zero-crossing density → consistent with <strong>Levantine</strong> expressive pitch or <strong>Algerian</strong> /dz/ affricates.';
+  else if (hints.highSC && !hints.highZCR)
+    hintText += 'Mid-high spectral centroid with moderate ZCR → close to <strong>Algerian</strong> compressed vowel clusters and French loanword phonology.';
+  else
+    hintText += 'Reduced spectral energy and low ZCR — consistent with <strong>Sudanese</strong> slower speech rate and Classical Arabic retention. Check the ML tab for the classifier verdict.';
+
+  fpHint.innerHTML = hintText;
+  fpLegend.textContent = 'Features: MFCC-1 (energy) · MFCC-2 (spectral slope) · Spectral Centroid · Bandwidth · Zero-Crossing Rate · Fundamental Pitch (F0)';
+}
+
+/* ══════════════════════════════════════════════════════
+   SINGLE UPLOAD & ANALYSIS
+   ══════════════════════════════════════════════════════ */
+async function handleSingleUpload() {
+  const file = document.getElementById('f1').files[0];
+  if (!file) return;
+
+  document.getElementById('uploadName1').textContent = file.name;
+  document.getElementById('uz1').classList.add('has-file');
+
+  // Show sidebar file info
+  document.getElementById('fileInfo').style.display = 'flex';
+  document.getElementById('fileSize').textContent   = formatSize(file.size);
+  document.getElementById('fileFormat').textContent = file.name.split('.').pop().toUpperCase();
+  document.getElementById('sidebarDialect').textContent = 'Analyzing…';
+
+  b64Single = await fileToB64(file);
+
+  const blobUrl = URL.createObjectURL(file);
+  document.getElementById('audioPlayer').src      = blobUrl;
+  document.getElementById('audioPlayerTrans').src = blobUrl;
+  document.getElementById('sidebarAudioWrap').style.display = '';
+
+  // Draw waveform
+  const arrayBuffer = await file.arrayBuffer();
+  const audioCtx    = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+    document.getElementById('fileDuration').textContent = formatDur(decoded.duration);
+    drawWaveform(decoded);
+
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-cell">
+        <div class="s-label">Duration</div>
+        <div class="s-value">${formatDur(decoded.duration)}</div>
+        <div class="s-sub">hh:mm format</div>
+      </div>
+      <div class="stat-cell">
+        <div class="s-label">Sample Rate</div>
+        <div class="s-value">${(decoded.sampleRate/1000).toFixed(1)}<span style="font-size:0.65rem;font-weight:400;"> kHz</span></div>
+        <div class="s-sub">${decoded.numberOfChannels} ch · 16-bit</div>
+      </div>
+      <div class="stat-cell">
+        <div class="s-label">Samples</div>
+        <div class="s-value">${(decoded.length/1000).toFixed(0)}<span style="font-size:0.65rem;font-weight:400;"> K</span></div>
+        <div class="s-sub">${formatSize(file.size)}</div>
+      </div>
+    `;
+  } catch(e) {
+    console.warn('Waveform decode failed:', e);
+  }
+
+  document.getElementById('vizContent').style.display = 'flex';
+  document.getElementById('vizEmpty').style.display   = 'none';
+  renderFingerprintBars(null); // initial with nulls
+
+  document.getElementById('sidebarStatus').className = 'sidebar-status';
+  document.getElementById('sidebarStatus').textContent = 'Sending to backend for analysis…';
+
+  await doSingleAnalysis();
+}
+
+async function doSingleAnalysis() {
+  showLoad('Analyzing audio…',
+    'Extracting 11 key features · Running SVM · Transcribing via ElevenLabs Scribe');
+  try {
+    const res = await fetch(`${API}/analyze_and_transcribe`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({audio: b64Single}),
+    });
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+
+    // ── Sidebar update ──
+    const si = document.getElementById('sidebarDialect');
+    si.textContent = `${d.dialect_flag} ${d.dialect_label}`;
+    si.style.color = DIALECT_COLORS[d.dialect] || 'var(--teal)';
+
+    const st = document.getElementById('sidebarStatus');
+    st.className = 'sidebar-status ready';
+    st.textContent = '✓ Analysis complete — explore tabs →';
+
+    // ── Spectrogram (Viz tab) ──
+    document.getElementById('spectrogramImg').src = `data:image/png;base64,${d.spectrogram}`;
+
+    // ── Fingerprint bars — pass real feature values ──
+    if (d.features_raw) {
+      renderFingerprintBars(d.features_raw);
+    }
+
+    // ── ML tab ──
+    document.getElementById('mlEmpty').style.display   = 'none';
+    document.getElementById('mlContent').style.display = 'flex';
+    renderDialectBadge('dialectBadge', d.dialect, d.dialect_label, d.dialect_arabic, d.dialect_flag);
+    renderProbaBars('probaBars', d.proba);
+    renderExplanation('explanationList', d.explanation);
+    document.getElementById('featureChartImg').src = `data:image/png;base64,${d.feature_chart}`;
+    document.getElementById('itab-ml').classList.add('done');
+
+    // ── Transcription tab ──
+    document.getElementById('transEmpty').style.display   = 'none';
+    document.getElementById('transContent').style.display = 'flex';
+    transWords = d.words || [];
+    setupTranscriptionBox('transBox', 'audioPlayerTrans', transWords, d.text);
+    document.getElementById('itab-trans').classList.add('done');
+
+    // ── Translate tab ──
+    document.getElementById('translateEmpty').style.display   = 'none';
+    document.getElementById('translateContent').style.display = 'flex';
+    document.getElementById('srcDialectInput').value = d.dialect_label + ' (' + (d.dialect_arabic || '') + ')';
+    document.getElementById('itab-translate').classList.add('done');
+
+  } catch(e) {
+    const st = document.getElementById('sidebarStatus');
+    st.className = 'sidebar-status error';
+    st.textContent = '✗ Error: ' + e.message;
+  } finally {
+    hideLoad();
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   TRANSLATE
+   ══════════════════════════════════════════════════════ */
+async function doTranslate() {
+  const sourceText = transWords.length
+    ? transWords.map(w => w.word).join(' ')
+    : document.getElementById('transBox').textContent.trim();
+
+  if (!sourceText) {
+    alert('No transcribed text available. Upload and analyse a file first.'); return;
+  }
+
+  const tgtDialect = document.getElementById('tgtDialect').value;
+  const voice_id   = document.getElementById('ttsVoice').value;
+
+  showLoad(`Translating to ${tgtDialect}…`, 'Calling Groq LLM · Synthesising voice via ElevenLabs');
+  try {
+    const res = await fetch(`${API}/translate`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({source_text: sourceText, target_dialect: tgtDialect, voice_id}),
+    });
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+
+    document.getElementById('translatedText').textContent = d.translated_text;
+
+    const byteChars = atob(d.audio);
+    const byteNums  = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+    const blob    = new Blob([byteNums], {type:'audio/mpeg'});
+    const blobUrl = URL.createObjectURL(blob);
+
+    const player = document.getElementById('ttsPlayer');
+    player.src   = blobUrl;
+    player.load();
+
+    window._ttsBlobUrl = blobUrl;
+    window._ttsDialect = d.target_dialect || tgtDialect;
+
+    document.getElementById('ttsError').style.display        = 'none';
+    document.getElementById('ttsDownloadBtn').style.display  = '';
+    document.getElementById('translateResult').style.display = 'flex';
+
+  } catch(e) {
+    document.getElementById('ttsError').textContent   = 'Translation error: ' + e.message;
+    document.getElementById('ttsError').style.display = '';
+    document.getElementById('translateResult').style.display = 'flex';
+  } finally {
+    hideLoad();
+  }
+}
+
+function downloadTTS() {
+  if (!window._ttsBlobUrl) return;
+  const a  = document.createElement('a');
+  a.href     = window._ttsBlobUrl;
+  a.download = `translated_${window._ttsDialect || 'audio'}.mp3`;
+  a.click();
+}
+
+/* ══════════════════════════════════════════════════════
+   MIXING PAGE
+   ══════════════════════════════════════════════════════ */
+function updateSlider(val) {
+  const pct    = parseInt(val);
+  const slider = document.getElementById('weightSlider');
+  slider.style.setProperty('--pct', pct + '%');
+  document.getElementById('sliderValue').innerHTML =
+    `A: ${pct}%&nbsp; | &nbsp;B: ${100 - pct}%`;
+  document.getElementById('sliderLabelA').textContent = `Audio A — ${pct}%`;
+  document.getElementById('sliderLabelB').textContent = `Audio B — ${100 - pct}%`;
+}
+updateSlider(50);
+
+function setMode(mode) {
+  mixMode = mode;
+  document.getElementById('modeOverlapBtn').classList.toggle('active', mode === 'overlap');
+  document.getElementById('modeSeqBtn').classList.toggle('active', mode === 'sequential');
+  document.getElementById('modeDescOverlap').style.display = mode === 'overlap'    ? '' : 'none';
+  document.getElementById('modeDescSeq').style.display     = mode === 'sequential' ? '' : 'none';
+}
+
+async function handleMixUpload(which) {
+  const file = document.getElementById('f' + which).files[0];
+  if (!file) return;
+
+  document.getElementById('uploadName' + which).textContent = file.name;
+  document.getElementById('uz' + which).classList.add('has-file');
+
+  const b64 = await fileToB64(file);
+  const audioEl = document.getElementById('audio' + which);
+  audioEl.src = URL.createObjectURL(file);
+  audioEl.style.display = '';
+
+  if (which === 'A') { b64A = b64; }
+  else               { b64B = b64; }
+
+  // Get duration
+  audioEl.addEventListener('loadedmetadata', function onMeta() {
+    audioEl.removeEventListener('loadedmetadata', onMeta);
+    const dur = audioEl.duration;
+    if (which === 'A') { durA = dur; document.getElementById('durationA').textContent = `Duration: ${formatDur(dur)}`; }
+    else               { durB = dur; document.getElementById('durationB').textContent = `Duration: ${formatDur(dur)}`; }
+    updateMixLengthNote();
+  }, {once: true});
+
+  document.getElementById('btnMix').disabled = !(b64A && b64B);
+}
+
+function updateMixLengthNote() {
+  const maxDur = Math.max(durA, durB);
+  if (maxDur > 0) {
+    const note = document.getElementById('mixLengthNote');
+    note.style.display = 'flex';
+    document.getElementById('mixLengthVal').textContent = formatDur(maxDur);
+  }
+}
+
+async function doMix() {
+  if (!b64A || !b64B) { alert('Please upload both audio files first.'); return; }
+
+  const weight    = parseInt(document.getElementById('weightSlider').value) / 100;
+  const modeLabel = mixMode === 'overlap' ? 'Weighted Overlap Mix' : 'Sequential Concatenation';
+
+  showLoad(`Running ${modeLabel}…`,
+    'Mixing audio · Extracting 11 key features · Classifying dialect · Building visualisations');
+  try {
+    const res = await fetch(`${API}/mix_and_analyze`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({audio1: b64A, audio2: b64B, weight, mode: mixMode}),
+    });
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+
+    document.getElementById('mix-results').style.display = '';
+    document.getElementById('mixLabel').innerHTML = `<strong>Mode:</strong> ${d.label}`;
+
+    const mixPlayer = document.getElementById('mixedPlayer');
+    mixPlayer.src   = `data:audio/wav;base64,${d.mixed_audio}`;
+
+    renderDialectBadge('mixDialectBadge', d.dialect, d.dialect_label, d.dialect_arabic, d.dialect_flag);
+    renderProbaBars('mixProbaBars', d.proba);
+    renderExplanation('mixExplanationList', d.explanation);
+
+    document.getElementById('mixSpectrogramImg').src  = `data:image/png;base64,${d.spectrogram}`;
+    document.getElementById('mixFeatureChartImg').src = `data:image/png;base64,${d.feature_chart}`;
+    document.getElementById('mix-results').scrollIntoView({behavior:'smooth'});
+
+  } catch(e) {
+    alert('Mix Error: ' + e.message);
+  } finally {
+    hideLoad();
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDER HELPERS
+   ══════════════════════════════════════════════════════ */
+function renderDialectBadge(containerId, key, label, arabic, flag) {
+  const el    = document.getElementById(containerId);
+  const color = DIALECT_COLORS[key] || '#00d4b8';
+  el.style.borderColor = color;
+  el.style.color       = color;
+  el.style.background  = color + '12';
+  el.innerHTML = `
+    <span style="font-size:1.5rem;">${flag || ''}</span>
+    <span style="font-family:var(--font-disp);letter-spacing:0.05em;">${label}</span>
+    <span class="ar-name">${arabic}</span>
+    <span class="tag">${key}</span>
+  `;
+}
+
+function renderProbaBars(containerId, proba) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = Object.entries(proba)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, val]) => {
+      const color = DIALECT_COLORS[key] || '#888';
+      const label = DIALECT_LABELS[key] || key;
+      return `
+        <div class="proba-row">
+          <div class="proba-label">${label} (${key})</div>
+          <div class="proba-bar-wrap">
+            <div class="proba-bar" style="width:${(val*100).toFixed(1)}%;background:${color};"></div>
+          </div>
+          <div class="proba-val">${(val*100).toFixed(1)}%</div>
+        </div>
+      `;
+    }).join('');
+}
+
+function renderExplanation(listId, items) {
+  document.getElementById(listId).innerHTML =
+    items.map(ex => `<li>${ex}</li>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+   TRANSCRIPTION SYNC ENGINE
+   ══════════════════════════════════════════════════════ */
+function setupTranscriptionBox(boxId, audioId, words, fullText) {
+  const box      = document.getElementById(boxId);
+  const audioEl  = document.getElementById(audioId);
+  const statusDot  = document.getElementById('transStatusDot');
+  const statusText = document.getElementById('transStatusText');
+
+  if (!words || words.length === 0) {
+    box.textContent = fullText || 'No speech detected.';
+    if (statusText) statusText.textContent = 'No word timestamps available.';
+    return;
+  }
+
+  box.innerHTML = words.map((w, i) =>
+    `<span class="t-word" id="${boxId}_tw${i}" data-idx="${i}">${w.word}&nbsp;</span>`
+  ).join('');
+
+  let lastActiveIdx  = -1;
+  let hasPlayedOnce  = false;
+
+  if (statusDot)  statusDot.className  = 'trans-status-dot';
+  if (statusText) statusText.textContent = 'Press play to reveal transcription word by word';
+
+  const wordEl = i => document.getElementById(`${boxId}_tw${i}`);
+
+  audioEl.addEventListener('play', () => {
+    if (statusDot) statusDot.className = 'trans-status-dot active';
+    if (hasPlayedOnce) {
+      if (statusText) statusText.textContent = 'Karaoke mode — re-play highlighting';
+      words.forEach((_, i) => {
+        const el = wordEl(i);
+        if (el) el.classList.remove('active','done','revealing');
+      });
+      lastActiveIdx = -1;
+    } else {
+      if (statusText) statusText.textContent = 'Revealing transcription…';
+    }
+  });
+
+  audioEl.addEventListener('pause', () => {
+    if (statusDot) statusDot.className = 'trans-status-dot done';
+    if (statusText) statusText.textContent = hasPlayedOnce
+      ? 'Paused — play again to highlight' : 'Paused — resume to continue revealing';
+  });
+
+  audioEl.addEventListener('ended', () => {
+    hasPlayedOnce = true;
+    words.forEach((_, i) => {
+      const el = wordEl(i);
+      if (!el) return;
+      el.classList.remove('active','revealing');
+      if (!el.classList.contains('revealed')) el.classList.add('revealed');
+    });
+    if (statusDot)  statusDot.className  = 'trans-status-dot done';
+    if (statusText) statusText.textContent = 'Full transcription visible — play again to highlight';
+    lastActiveIdx = -1;
+  });
+
+  audioEl.addEventListener('seeked', () => {
+    const ct = audioEl.currentTime;
+    words.forEach((w, i) => {
+      const el = wordEl(i);
+      if (!el) return;
+      el.classList.remove('active','done','revealing');
+      if (hasPlayedOnce) {
+        el.classList.add('revealed');
+        if (w.end <= ct) el.classList.add('done');
+      } else {
+        if (w.end <= ct) { el.classList.remove('revealing'); el.classList.add('revealed'); }
+      }
+    });
+    lastActiveIdx = -1;
+  });
+
+  audioEl.addEventListener('timeupdate', () => {
+    const ct = audioEl.currentTime;
+    for (let i = 0; i < words.length; i++) {
+      const w  = words[i];
+      const el = wordEl(i);
+      if (!el) continue;
+      const isCurrent = ct >= w.start && ct < w.end;
+      if (isCurrent) {
+        if (lastActiveIdx !== i) {
+          if (lastActiveIdx >= 0) {
+            const prev = wordEl(lastActiveIdx);
+            if (prev) { prev.classList.remove('active','revealing'); prev.classList.add(hasPlayedOnce ? 'done':'revealed'); }
+          }
+          el.classList.remove('done','revealed','revealing');
+          if (!hasPlayedOnce) { el.classList.add('revealing'); el.classList.add('active'); }
+          else                { el.classList.add('active'); }
+          el.scrollIntoView({block:'nearest', behavior:'smooth'});
+          lastActiveIdx = i;
+        }
+      } else if (ct >= w.end) {
+        if (el.classList.contains('active') || el.classList.contains('revealing')) {
+          el.classList.remove('active','revealing');
+          el.classList.add(hasPlayedOnce ? 'done' : 'revealed');
+        }
+        if (!hasPlayedOnce && !el.classList.contains('revealed') && !el.classList.contains('done'))
+          el.classList.add('revealed');
+      } else {
+        if (hasPlayedOnce && !el.classList.contains('active')) {
+          el.classList.remove('done');
+          if (!el.classList.contains('revealed')) el.classList.add('revealed');
+        }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
